@@ -1,6 +1,8 @@
 import sys, collections, copy, re
 import networkx as nx
 from networkx.classes.graph import Graph as NXGraph
+import pandas as pd
+from pandas import Series
 
 class Graph(NXGraph):
     """docstring for Graph"""
@@ -27,15 +29,14 @@ class Graph(NXGraph):
                     self.add_edge(trans_func(cols[1]), trans_func(cols[2]), label=trans_func(cols[3]))
             self.num_nodes = len(self.nodes())
             self.num_edges = len(self.edges())
-            self.nodelist = sorted(self.nodes()) # the original node id
-            self.nid2oid = self.nodelist
-            self.oid2nid = {oid:nid for nid, oid in enumerate(self.nodelist)}
-            # next, use integer id (nid)
-            self.node_labels = {nid:self.node[self.nodelist[nid]]['label'] for nid in range(self.num_nodes)}
-            self.edge_labels = dict()
-            for oid1, oid2 in self.edges():
-                nid1, nid2 = self.oid2nid[oid1], self.oid2nid[oid2]
-                self.edge_labels[(nid1, nid2)] = self.edge_labels[(nid2, nid1)] = self.edge[oid1][oid2]['label']
+            self.nodelist = sorted(self.nodes())
+            self.node_ids = Series(self.nodelist, index=range(self.num_nodes))
+            self.node_labels = Series([self.node[nid]['label'] for nid in self.nodelist], index=self.nodelist)
+            self.node_degrees = Series([self.degree(nid) for nid in self.nodelist], index=self.nodelist)
+            tmp = dict()
+            for nid1, nid2 in self.edges():
+                tmp[(nid1, nid2)] = tmp[(nid2, nid1)] = self.edge[nid1][nid2]['label']
+            self.edge_labels = Series(tmp)
             return True
         except Exception, e:
             print e
@@ -46,7 +47,6 @@ class Graph(NXGraph):
         a = nx.adjacency_matrix(self, nodelist=self.nodelist)
         self.adj_mat = a.toarray()
         return self.adj_mat
-
 
 
 def read_graphs(file_name):
