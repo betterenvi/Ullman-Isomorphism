@@ -8,7 +8,7 @@ class UllmanAlgorithm(object):
     def __init__(self, *args, **kwargs):
         super(UllmanAlgorithm, self).__init__()
 
-    def _init_params(self, q, g):
+    def _init_params(self, g, q):
         self.q = q # the query graph
         self.g = g # the large graph
         self.A = q.get_adjacency_matrix()
@@ -34,7 +34,30 @@ class UllmanAlgorithm(object):
         #     for j, nid_g in enumerate(self.g.nodelist):
         #         if self.q.node_labels[nid_q] == self.g.node_labels[nid_g] and self.q.degree(nid_q) <= self.g.degree(nid_g):
         #             self.M[i, j] = 1
+
         self.M = self.M.astype(int)
+        self._refine_M()
+
+    def _refine_M(self):
+        '''
+        for any x, (A[i][x] == 1) ===> exist y s.t. (M[x][y] == 1 and B[j][y] == 1). iie.,
+        for any x, (A[i][x] == 1) ===> exist y s.t. (M[x][y] == 1 and BT[y][j] == 1). i.e.,
+        for any x, (A[i][x] == 1) ===> (M[x, :] dot_prod BT[:, j]) >= 1 . i.e.,
+        (A[i, :] == 1)  ===> (M dot_prod BT[:, j]) >= 1 . i.e.,
+        A[i, :] <= (M dot_prod BT[:, j]). i.e.,
+        Let Y = M dot_prod BT, then
+        A[i, :] <= Y[:, j] = YT[j, :]
+        this refinement process is iterative
+        '''
+        BT = self.B.T
+        changed = True
+        while changed:
+            changed = False
+            for i in range(self.num_nodes_q):
+                for j in range(self.num_nodes_g):
+                    if self.M[i, j] > 0 and (self.A[i, :] <= self.M.dot(BT[:, j])).all():
+                        self.M[i, j] = 0
+                        changed = True
 
     def _check_isomorphic(self):
         '''
@@ -63,7 +86,6 @@ class UllmanAlgorithm(object):
                 self.avail_g[j] = 1
         self.M[depth, :] = row
 
-    def run(self, q, g):
-        self._init_params(q, g)
+    def run(self, g, q):
+        self._init_params(g, q)
         self._dfs(0)
-
