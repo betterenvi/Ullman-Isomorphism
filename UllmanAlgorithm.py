@@ -8,13 +8,15 @@ class UllmanAlgorithm(object):
     def __init__(self, *args, **kwargs):
         super(UllmanAlgorithm, self).__init__()
 
-    def _init_params(self, g, q, display_M=False, display_mapping=True):
+    def _init_params(self, g, q, display_M=False, display_mapping=True, max_num_iso=float('inf')):
         self.q = q # the query graph
         self.g = g # the large graph
         self.A = q.get_adjacency_matrix()
         self.B = g.get_adjacency_matrix()
         self.display_M = display_M
         self.display_mapping = display_mapping
+        self.max_num_iso = max_num_iso
+        self.done = 0 >= max_num_iso
         for attr in ['num_nodes', 'num_edges']:
             setattr(self, attr + '_q', getattr(q, attr))
             setattr(self, attr + '_g', getattr(g, attr))
@@ -22,6 +24,7 @@ class UllmanAlgorithm(object):
         self._construct_M()
         self.avail_g = np.ones(self.num_nodes_g) # if one node in g is not used/mapped. the opposite of 'F' vector in the paper
         self.Ms_isomorphic = list()
+        self.mappings = list()
         # for i, arg in enumerate(args):
         #     setattr(self, 'arg_' + str(i), arg)
         # for kw, arg in kwargs.items():
@@ -48,7 +51,7 @@ class UllmanAlgorithm(object):
         (A[i, :] == 1)  ===> diag(M dot_prod (BT[:, j] col_ele_prod (el_gT[:, j] outer_eq el_q[i, :]))) >= 1 . i.e.,
         A[i, :] <= diag(M dot_prod (BT[:, j] col_ele_prod (el_gT[:, j] outer_eq el_q[i, :]))).
         A[i, :] <= rowsum(M ele_prod ((el_qT[:, i] outer_eq el_g[j, :]) row_ele_prod B[j, :]))
-        in, numpy:
+        in numpy:
         A[i, :] <= (M * (el_q[:, i][:, None] == el_g[j, :]) * B[j, :]).sum(axis=1)
 
         if don't want to check edge label, then
@@ -87,10 +90,12 @@ class UllmanAlgorithm(object):
         isomorphic = (self.A <= C).all()
         if isomorphic:
             self.Ms_isomorphic.append(copy.deepcopy(self.M))
+            self.mappings.append(self._get_mapping(-1))
+            self.done = len(self.mappings) >= self.max_num_iso
             if self.display_M:
                 print self.M
             if self.display_mapping:
-                print self._get_mapping(-1)
+                print self.mappings[-1]
         return isomorphic
 
     def _get_mapping(self, M_idx=None):
@@ -106,6 +111,8 @@ class UllmanAlgorithm(object):
         return zip(list(I), list(J))
 
     def _dfs(self, depth=0):
+        if self.done:
+            return
         if depth >= self.num_nodes_q:
             self._check_isomorphic()
             return
@@ -120,8 +127,20 @@ class UllmanAlgorithm(object):
                 self._dfs(depth + 1)
                 self.avail_g[j] = 1
                 self.M[depth, j] = 0
+                if self.done:
+                    break
         self.M[depth, :] = row
 
-    def run(self, g, q, display_M=False, display_mapping=True):
-        self._init_params(g, q, display_M=False, display_mapping=True)
+    def run(self, g, q, display_M=False, display_mapping=True, max_num_iso=float('inf')):
+        '''
+        max_num_iso: if max_num_iso isomorphic subgraphs have been found, then stop
+        '''
+        self._init_params(g, q, display_M=display_M, display_mapping=display_mapping, max_num_iso=max_num_iso)
         self._dfs(depth=0)
+
+    def has_iso(self, g, q, display_M=False, display_mapping=True):
+        '''
+        check if g has at least 1 subgraph isomorphic to q
+        '''
+        self.run(g, q, display_M=display_M, display_mapping=display_mapping, max_num_iso=1)
+        return len(self.mappings) > 0
