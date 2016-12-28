@@ -1,8 +1,9 @@
 import sys, collections, copy, re
 import networkx as nx
 from networkx.classes.graph import Graph as NXGraph
+import numpy as np
 import pandas as pd
-from pandas import Series
+from pandas import Series, DataFrame
 
 class Graph(NXGraph):
     """docstring for Graph"""
@@ -31,12 +32,16 @@ class Graph(NXGraph):
             self.num_edges = len(self.edges())
             self.nodelist = sorted(self.nodes())
             self.node_ids = Series(self.nodelist, index=range(self.num_nodes))
+            self.node_id2idx = Series(range(self.num_nodes), index=self.nodelist)
             self.node_labels = Series([self.node[nid]['label'] for nid in self.nodelist], index=self.nodelist)
             self.node_degrees = Series([self.degree(nid) for nid in self.nodelist], index=self.nodelist)
-            tmp = dict()
+            tmp = np.zeros((self.num_nodes, self.num_nodes))
             for nid1, nid2 in self.edges():
-                tmp[(nid1, nid2)] = tmp[(nid2, nid1)] = self.edge[nid1][nid2]['label']
-            self.edge_labels = Series(tmp)
+                idx1, idx2 = self.node_id2idx[nid1], self.node_id2idx[nid2]
+                tmp[idx1, idx2] = tmp[idx2, idx1] = self.edge[nid1][nid2]['label']
+            self.edge_labels = DataFrame(tmp)
+            self.edge_labels.index = self.nodelist
+            self.edge_labels.columns = self.nodelist
             return True
         except Exception, e:
             print e
