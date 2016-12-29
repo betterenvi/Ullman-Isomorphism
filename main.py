@@ -34,7 +34,7 @@ for gi in range(10):
         if cmp_method == 'has_iso':
             ua_res = ua.has_iso(db_graphs[gi], query_graphs[qi], display_mapping=False)
             unmatched = ua_res != gm.subgraph_is_isomorphic()
-            num_unmatched +=  unmatched
+            num_unmatched += unmatched
         else:
             ua.run(db_graphs[gi], query_graphs[qi], display_mapping=False)
             nx_mappings = extract_all_mappings(gm)
