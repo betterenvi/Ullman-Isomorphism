@@ -30,7 +30,7 @@ for gi in range(10):
     for qi in range(10):
         gm = iso.GraphMatcher(db_graphs[gi], query_graphs[qi],
             node_match=iso.categorical_node_match('label', -1),
-            edge_match=iso.categorical_node_match('label', -1))
+            edge_match=iso.categorical_edge_match('label', -1))
         if cmp_method == 'has_iso':
             ua_res = ua.has_iso(db_graphs[gi], query_graphs[qi], display_mapping=False)
             unmatched = ua_res != gm.subgraph_is_isomorphic()
