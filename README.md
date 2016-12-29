@@ -1,6 +1,6 @@
 # Ullman Algorithm
 
-Ullman Alrithm [1] 是一个子图同构检测算法.
+Ullman Algorithm [1] 是一个子图同构检测算法.
 
 ### 实现
 
