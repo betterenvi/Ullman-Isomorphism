@@ -39,7 +39,7 @@ for gi in range(10):
             ua.run(db_graphs[gi], query_graphs[qi], display_mapping=False)
             nx_mappings = extract_all_mappings(gm)
             unmatched = ua.mappings != nx_mappings
-            num_unmatched += not unmatched
+            num_unmatched += unmatched
 
         if unmatched:
             print gi, qi,
