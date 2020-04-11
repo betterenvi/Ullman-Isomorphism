@@ -33,3 +33,6 @@ nohup.out
 .ipynb_checkpoints/*
 Untitled*
 *.pdf
+
+.idea
+venv
